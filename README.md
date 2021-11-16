@@ -29,9 +29,9 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 5.  Abre el proyecto r`eporte_GES` en RStudio
 6.  Knit `reporte.Rmd` con salida HTML
 
-##   
+## 
 
-## Screenshots 
+## Screenshots
 
 El reporte incluye una serie de gráficas y resúmenes estadísticos, basados en la información GES.
 
@@ -44,10 +44,6 @@ Gráfica general de garantías:
 Gráfica por unidad funcional:
 
 ![](images/image2.png "Garantías por unidad funcional")
-
-Gráfica de tiempos de espera:
-
-![](images/image3.png "Tiempos de espera de pacientes")
 
 ## :raising_hand: Contribuciones
 

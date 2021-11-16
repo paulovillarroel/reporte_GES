@@ -37,6 +37,8 @@ El reporte incluye una serie de gráficas y resúmenes estadísticos, basados en
 
 El reporte contiene más de 12 gráficos y diversas tablas de datos interactivas.
 
+Ejemplos:
+
 Gráfica general de garantías:
 
 ![](images/image1.png "Gráfica general de garantías")

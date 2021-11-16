@@ -24,9 +24,9 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 1.  Clona este repositorio en tu repositorio local
 2.  Descarga las garantías vigentes y retrasadas desde SIGGES
-3.  Guarda los archivos en la carpeta ./`data_raw` ([sigue estas recomendaciones](https://github.com/paulovillarroel/reporte_GES/blob/main/data_raw/Notes.txt))
-4.  Ajusta el archivo .`/tables/listado_etapas_GES.xlsx` a tus necesidades
-5.  Abre el proyecto r`eporte_GES` en RStudio
+3.  Guarda los archivos en la carpeta `/data_raw` ([sigue estas recomendaciones](https://github.com/paulovillarroel/reporte_GES/blob/main/data_raw/Notes.txt))
+4.  Ajusta el archivo `/tables/listado_etapas_GES.xlsx` a tus necesidades
+5.  Abre el proyecto `reporte_GES` en RStudio
 6.  Knit `reporte.Rmd` con salida HTML
 
 ## 

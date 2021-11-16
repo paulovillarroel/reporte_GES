@@ -318,7 +318,7 @@ plot_6 <- total_ges |>
 ggplotly(plot_6) 
 ```
 
-### Patologías oncológicas por etapa asistencial
+### Patologías oncológicas por etapa asistencial (todas)
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
 plot_7 <- total_ges |> 
@@ -338,7 +338,7 @@ plot_7 <- total_ges |>
 ggplotly(plot_7)
 ```
 
-### Patologías oncológicas retrasadas por etapa asistencial
+### Patologías oncológicas por etapa asistencial (retrasadas)
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
 plot_8 <- total_ges |> 

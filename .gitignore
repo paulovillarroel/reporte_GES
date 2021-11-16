@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data_raw/*
+!data_raw/Notes.txt
+reporte.html

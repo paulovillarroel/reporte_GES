@@ -1,0 +1,7 @@
+En esta carpeta (/data_raw) coloca los archivos Excel descargados desde SIGGES.
+Los reportes corresponden a las garantías vigentes (todas) y retrasadas.
+No elimines ni modiques los archivos descargados. Solo guárdalos con formato xlsx.
+
+Guarda los archivos con los siguientes nombres:
+vigentes.xlsx
+vencidas.xlsx

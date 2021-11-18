@@ -5,3 +5,5 @@
 data_raw/*
 !data_raw/Notes.txt
 reporte.html
+data_clean/*
+!data_clean/text.txt

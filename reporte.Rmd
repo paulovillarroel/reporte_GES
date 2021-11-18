@@ -2,10 +2,11 @@
 title: "Reporte GES"
 author: "Oficina GES, Hospital Padre Hurtado"
 date: "Informe generado el `r format(Sys.time(), '%d %B, %Y')`"
-output: 
+output:
   html_document:
     toc: true
     toc_float: true
+    toc_depth: 4
     theme: "cerulean"
 ---
 
@@ -31,6 +32,9 @@ library(lubridate)
 library(kableExtra)
 library(treemap)
 library(RColorBrewer)
+library(writexl)
+library(data.table)
+library(scales)
 ```
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
@@ -89,6 +93,24 @@ total_ges <- inner_join(total_ges, etapas) |>
                         )
          )
 ```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+fecha_vigentes <- read_excel("data_raw/vigentes.xlsx")[1, 1] %>% 
+  mutate(corte = dmy(str_extract(`Para Grabar presione F12`, "(\\d+/*\\d+/*\\d+)")))
+fecha_vigentes <- fecha_vigentes$corte
+
+fecha_vencidas <- read_excel("data_raw/vencidas.xlsx")[1, 1] %>% 
+  mutate(corte = dmy(str_extract(`Para Grabar presione F12`, "(\\d+/*\\d+/*\\d+)")))
+fecha_vencidas <- fecha_vencidas$corte
+
+total_ges$corte <- fecha_vencidas
+
+write_xlsx(ges_vigentes, paste0("data_clean/ges_vigentes_", fecha_vigentes, ".xlsx"))
+write_xlsx(ges_vencidas, paste0("data_clean/ges_vencidas_", fecha_vencidas, ".xlsx"))
+write_xlsx(total_ges, paste0("data_clean/total_ges_", fecha_vencidas, ".xlsx"))
+```
+
 
 ```{r echo=FALSE}
 total_vencidos <- total_ges |> 
@@ -382,12 +404,134 @@ plot_9 <- total_ges |>
 ggplotly(plot_9, tooltip = "text")
 ```
 
+### Evolución garantías retrasadas oncológicas
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+temp <- list.files(path = "./data_clean/",
+               pattern = "total_ges*", 
+               full.names = TRUE) %>% 
+    map_df(~read_excel(.))
+
+integer_breaks <- function(n = 5, ...) {
+  fxn <- function(x) {
+    breaks <- floor(pretty(x, n, ...))
+    names(breaks) <- attr(breaks, "labels")
+    breaks
+  }
+  return(fxn)
+}
+```
+
+#### Todas las garantías
+
+```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
+plot_10 <- temp %>% 
+  mutate(corte = ymd(corte)) %>% 
+  filter(garantia == "Vencido", onco == TRUE) %>% 
+  dplyr::group_by(corte) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(corte, n)) +
+  geom_line(size = 1.5, color = "#cbc9e2") +
+  geom_point(size= 2, color = "#756bb1") +
+  scale_y_continuous(breaks = integer_breaks()) + 
+  scale_x_date(date_labels = "%b %d") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  labs(
+    #title = "Todas las garantías retrasadas",
+    x = "",
+    y = "N° garantías retrasadas"
+  )
+
+ggplotly(plot_10)
+```
+
+#### Garantías por tipo de atención
+
+```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
+plot_11 <- temp %>% 
+  mutate(corte = ymd(corte)) %>% 
+  filter(garantia == "Vencido", onco == TRUE) %>% 
+  dplyr::group_by(corte, tipo) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(corte, n, color = tipo)) +
+  geom_line(size = 1.5) +
+  geom_point(size= 2) +
+  scale_y_continuous(breaks = integer_breaks()) + 
+  scale_x_date(date_labels = "%b %d") +
+  scale_color_manual(name = "Tipo de atención",
+                     values = c("#cbc9e2", "#756bb1")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(
+    #title = "Todas las garantías retrasadas",
+    x = "",
+    y = "N° garantías retrasadas"
+  )
+
+ggplotly(plot_11)
+```
+
+#### Garantías ambulatorias por patología
+
+```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
+plot_12 <- temp %>% 
+  mutate(corte = ymd(corte)) %>% 
+  filter(garantia == "Vencido", onco == TRUE, tipo == "Ambulatorio") %>% 
+  dplyr::group_by(tipo, problema_de_salud, corte) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(corte, n, color = problema_de_salud)) +
+  geom_line(size = 0.7) +
+  geom_point(size = 1.2) +
+  scale_y_continuous(breaks = integer_breaks()) + 
+  scale_x_date(date_labels = "%b %d") +
+  #scale_color_brewer(palette = "Accent") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  labs(
+    #title = "Ambulatorias",
+    x = "",
+    y = "N° garantías retrasadas"
+  )
+
+ggplotly(plot_12)
+```
+
+#### Garantías quirúrgicas por patología
+
+```{r echo=FALSE, fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
+plot_13 <- temp %>% 
+  mutate(corte = ymd(corte)) %>% 
+  filter(garantia == "Vencido", onco == TRUE, tipo == "Quirúrgico") %>% 
+  dplyr::group_by(tipo, problema_de_salud, corte) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(corte, n, color = problema_de_salud)) +
+  geom_line(size = 0.7) +
+  geom_point(size = 1.2) +
+  scale_y_continuous(breaks = integer_breaks()) + 
+  scale_x_date(date_labels = "%b %d") +
+  #scale_color_brewer(palette = "Accent") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  labs(
+    #title = "Quirúrgicas",
+    x = "",
+    y = "N° garantías retrasadas"
+  )
+
+ggplotly(plot_13)
+```
+
+
 ## Por área de atención
 
 ### Patologías ambulatorias
 
 ```{r echo=FALSE, fig.height=7.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_10 <- total_ges |> 
+plot_14 <- total_ges |> 
   filter(tipo == "Ambulatorio") |> 
   group_by(problema_de_salud, riesgo) |> 
   summarise(n_casos = n()) |> 
@@ -401,13 +545,13 @@ plot_10 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_10)
+ggplotly(plot_14)
 ```
 
 ### Patologías quirúrgicas
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
-plot_11 <- total_ges |> 
+plot_15 <- total_ges |> 
   filter(tipo == "Quirúrgico") |> 
   group_by(problema_de_salud, riesgo) |> 
   summarise(n_casos = n()) |> 
@@ -421,8 +565,10 @@ plot_11 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_11)
+ggplotly(plot_15)
 ```
+
+
 
 ------------------------------------------------------------------------
 

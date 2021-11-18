@@ -5,3 +5,12 @@ No elimines ni modiques los archivos descargados. Solo guárdalos con formato xl
 Guarda los archivos con los siguientes nombres:
 vigentes.xlsx
 vencidas.xlsx
+
+Ojo. No cambies esos nombres.
+
+
+Para usar la nueva funcionalidad de evolución de las garantías:
+Se ha incluído la posibilidad de que cada vez que actualices los 2 archivos anteriores, se generará como salida un archivo resumen con todas las columnas nuevas en la carpeta /data_clean.
+El archivo generado toma la fecha en que son descargadas de SIGGES y lo utiliza para marcarlo. 
+En la medida que reescribas diariamente los archivos de vigentes y vencidos, obtendrás un nuevo archivo en /data_clean cada uno con la fecha de descarga. 
+Esos archivos serán utilizados para gererar la evolución de las garantías.

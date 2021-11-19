@@ -36,6 +36,12 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 ## :star: Novedades
 
+18-nov-21:
+
+-   Arreglo algunos bugs
+
+-   Agrego gráfico resumen de garantías retrasadas por etapa asistencial
+
 17-nov-21:
 
 -   Se agregan varios gráficos para analizar la tendencia de la evolución de las garantías retrasadas

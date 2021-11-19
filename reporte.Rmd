@@ -206,6 +206,31 @@ plot_1 <- total_ges |>
 ggplotly(plot_1)
 ```
 
+### Días de retraso por etapa asistencial
+
+```{r echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+plot_2 <- total_ges |> 
+  filter(riesgo == "Vencido") |>  
+  dplyr::group_by(problema_de_salud, etapa) |> 
+  dplyr::summarise(dias = round(sum(dias_retraso)/ n(), 1),
+                   n = n()) |> 
+  ggplot(aes(dias, n, 
+             text = paste("Problema:", problema_de_salud, "\nN° casos:", n, "\nEspera media:", dias, "días", "\nEtapa:", etapa), 
+             color = etapa)) +
+  geom_jitter(size = 3) +
+  
+  scale_color_manual(name = "Tipo de etapa",
+                     values = c("#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#b3cde3", "#f1e2cc", "#cccccc")) +
+  theme_bw() +
+  labs(
+  x = "Días de espera (media)",
+  y = "N° de casos"
+  ) 
+
+ggplotly(plot_2, tooltip = "text")
+```
+
+
 ## Análisis por riesgo de vencimiento
 
 Las patologías vigentes están clasificadas en 3 categorías, según su **riesgo de vencimiento**:
@@ -217,7 +242,7 @@ Las patologías vigentes están clasificadas en 3 categorías, según su **riesg
 ### Riesgo por problema de salud
 
 ```{r echo=FALSE, fig.height=8.5, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
-plot_2 <- total_ges |> 
+plot_3 <- total_ges |> 
   group_by(problema_de_salud, riesgo) |> 
   summarise(n_casos = n()) |> 
   ggplot(aes(riesgo, problema_de_salud)) +
@@ -230,13 +255,13 @@ plot_2 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_2)
+ggplotly(plot_3)
 ```
 
 ### Riesgo por centro de responsabilidad
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
-plot_3 <- total_ges |> 
+plot_4 <- total_ges |> 
   group_by(centro_responsabilidad, riesgo) |> 
   summarise(n_casos = n()) |> 
   ggplot(aes(riesgo, centro_responsabilidad)) +
@@ -249,13 +274,13 @@ plot_3 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_3)
+ggplotly(plot_4)
 ```
 
 ### Riesgo por especialidad
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
-plot_4 <- total_ges |> 
+plot_5 <- total_ges |> 
   group_by(especialidad, riesgo) |> 
   summarise(n_casos = n()) |> 
   ggplot(aes(riesgo, especialidad)) +
@@ -268,8 +293,9 @@ plot_4 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_4)
+ggplotly(plot_5)
 ```
+
 
 ## Casos oncológicos
 
@@ -279,10 +305,14 @@ ggplotly(plot_4)
 total_onco <- total_ges |> 
   filter(onco == TRUE) |>  
   dplyr::summarise(n = n())
-  
+
+total_onco_retrasadas <- total_ges |> 
+  filter(onco == TRUE, riesgo == "Vencido") |>  
+  dplyr::summarise(n = n())
 ```
 
-Actualmente hay `r total_onco$n` garantías retrasadas oncológicas.\
+Actualmente hay `r total_onco$n` garantías oncológicas. De ellas, `r total_onco_retrasadas$n` están retrasadas (`r round(total_onco_retrasadas$n / total_onco$n * 100, 1)`%)  
+
 Estas se distribuyen de la siguiente forma.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
@@ -300,7 +330,7 @@ DT::datatable(tabla_onco,
 ### Por tipo de riesgo y área de atención
 
 ```{r echo=FALSE, fig.height=5, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
-plot_5 <- total_ges |> 
+plot_6 <- total_ges |> 
   filter(onco == TRUE) |> 
   group_by(riesgo, tipo) |> 
   summarise(n_casos = n()) |> 
@@ -317,13 +347,13 @@ plot_5 <- total_ges |>
     ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_5)
+ggplotly(plot_6)
 ```
 
 ### Riesgo por patologías oncológicas
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
-plot_6 <- total_ges |> 
+plot_7 <- total_ges |> 
   filter(onco == TRUE) |> 
   group_by(problema_de_salud, riesgo) |> 
   summarise(n_casos = n()) |> 
@@ -337,34 +367,14 @@ plot_6 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_6) 
+ggplotly(plot_7) 
 ```
 
 ### Patologías oncológicas por etapa asistencial (todas)
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
-plot_7 <- total_ges |> 
-  filter(onco == TRUE) |> 
-  group_by(problema_de_salud, etapa) |> 
-  summarise(n_casos = n()) |> 
-  ggplot(aes(etapa, problema_de_salud)) +
-  geom_tile(aes(fill = n_casos)) +
-  scale_fill_gradient(low = "#efedf5", high = "#54278f") +
-  theme_bw() +
-  labs(
-  x = "",
-  y = ""
-  ) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-
-ggplotly(plot_7)
-```
-
-### Patologías oncológicas por etapa asistencial (retrasadas)
-
-```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
 plot_8 <- total_ges |> 
-  filter(onco == TRUE, riesgo == "Vencido") |> 
+  filter(onco == TRUE) |> 
   group_by(problema_de_salud, etapa) |> 
   summarise(n_casos = n()) |> 
   ggplot(aes(etapa, problema_de_salud)) +
@@ -380,10 +390,30 @@ plot_8 <- total_ges |>
 ggplotly(plot_8)
 ```
 
+### Patologías oncológicas por etapa asistencial (retrasadas)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
+plot_9 <- total_ges |> 
+  filter(onco == TRUE, riesgo == "Vencido") |> 
+  group_by(problema_de_salud, etapa) |> 
+  summarise(n_casos = n()) |> 
+  ggplot(aes(etapa, problema_de_salud)) +
+  geom_tile(aes(fill = n_casos)) +
+  scale_fill_gradient(low = "#efedf5", high = "#54278f") +
+  theme_bw() +
+  labs(
+  x = "",
+  y = ""
+  ) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+ggplotly(plot_9)
+```
+
 ### Días de retraso por paciente y etapa asistencial
 
 ```{r echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
-plot_9 <- total_ges |> 
+plot_10 <- total_ges |> 
   filter(riesgo == "Vencido", onco == TRUE) |>  
   dplyr::group_by(problema_de_salud, etapa) |> 
   dplyr::summarise(dias = round(sum(dias_retraso)/ n(), 1),
@@ -401,7 +431,7 @@ plot_9 <- total_ges |>
   y = "N° de casos"
   ) 
 
-ggplotly(plot_9, tooltip = "text")
+ggplotly(plot_10, tooltip = "text")
 ```
 
 ### Evolución garantías retrasadas oncológicas
@@ -425,7 +455,7 @@ integer_breaks <- function(n = 5, ...) {
 #### Todas las garantías
 
 ```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_10 <- temp %>% 
+plot_11 <- temp %>% 
   mutate(corte = ymd(corte)) %>% 
   filter(garantia == "Vencido", onco == TRUE) %>% 
   dplyr::group_by(corte) %>% 
@@ -444,13 +474,13 @@ plot_10 <- temp %>%
     y = "N° garantías retrasadas"
   )
 
-ggplotly(plot_10)
+ggplotly(plot_11)
 ```
 
 #### Garantías por tipo de atención
 
 ```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_11 <- temp %>% 
+plot_12 <- temp %>% 
   mutate(corte = ymd(corte)) %>% 
   filter(garantia == "Vencido", onco == TRUE) %>% 
   dplyr::group_by(corte, tipo) %>% 
@@ -470,13 +500,13 @@ plot_11 <- temp %>%
     y = "N° garantías retrasadas"
   )
 
-ggplotly(plot_11)
+ggplotly(plot_12)
 ```
 
 #### Garantías ambulatorias por patología
 
 ```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_12 <- temp %>% 
+plot_13 <- temp %>% 
   mutate(corte = ymd(corte)) %>% 
   filter(garantia == "Vencido", onco == TRUE, tipo == "Ambulatorio") %>% 
   dplyr::group_by(tipo, problema_de_salud, corte) %>% 
@@ -496,13 +526,13 @@ plot_12 <- temp %>%
     y = "N° garantías retrasadas"
   )
 
-ggplotly(plot_12)
+ggplotly(plot_13)
 ```
 
 #### Garantías quirúrgicas por patología
 
 ```{r echo=FALSE, fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_13 <- temp %>% 
+plot_14 <- temp %>% 
   mutate(corte = ymd(corte)) %>% 
   filter(garantia == "Vencido", onco == TRUE, tipo == "Quirúrgico") %>% 
   dplyr::group_by(tipo, problema_de_salud, corte) %>% 
@@ -522,7 +552,7 @@ plot_13 <- temp %>%
     y = "N° garantías retrasadas"
   )
 
-ggplotly(plot_13)
+ggplotly(plot_14)
 ```
 
 
@@ -531,7 +561,7 @@ ggplotly(plot_13)
 ### Patologías ambulatorias
 
 ```{r echo=FALSE, fig.height=7.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_14 <- total_ges |> 
+plot_15 <- total_ges |> 
   filter(tipo == "Ambulatorio") |> 
   group_by(problema_de_salud, riesgo) |> 
   summarise(n_casos = n()) |> 
@@ -545,13 +575,13 @@ plot_14 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_14)
+ggplotly(plot_15)
 ```
 
 ### Patologías quirúrgicas
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
-plot_15 <- total_ges |> 
+plot_16 <- total_ges |> 
   filter(tipo == "Quirúrgico") |> 
   group_by(problema_de_salud, riesgo) |> 
   summarise(n_casos = n()) |> 
@@ -565,7 +595,7 @@ plot_15 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_15)
+ggplotly(plot_16)
 ```
 
 

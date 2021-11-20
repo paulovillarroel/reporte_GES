@@ -451,7 +451,7 @@ plot_10 <- total_ges |>
 
 ggplotly(plot_10)
 ```
-&nbsp
+&nbsp;
 
 ### Días de retraso por paciente y etapa asistencial
 

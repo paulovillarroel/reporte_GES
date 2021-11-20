@@ -18,7 +18,7 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 ## :red_circle: Desventajas:
 
--   Requiere conocimientos en R Markdown (básicos)
+-   Requiere conocimientos en R Markdown (básicos)  
 
 # :construction_worker: Uso
 
@@ -32,9 +32,15 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 5.  Abre el proyecto `reporte_GES` en RStudio
 
-6.  Knit `reporte.Rmd` con salida HTML
+6.  Knit `reporte.Rmd` con salida HTML  
 
 ## :star: Novedades
+
+20-nov-21:
+
+-   Arreglo algunos elementos gráficos
+
+-   Agrego una descripción a varios gráficos
 
 18-nov-21:
 
@@ -48,7 +54,7 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 -   Se agrega como salida la generación de listados con las clasificaciones usadas en el reporte
 
--   Se mejoran algunos elementos de color
+-   Se mejoran algunos elementos de color  
 
 ## :framed_picture: Screenshots
 

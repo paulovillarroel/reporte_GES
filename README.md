@@ -36,6 +36,12 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 ## :star: Novedades
 
+24-nov-21:
+
+-   Se agregan gráficos de tendencia con media móvil semanal
+
+-   Se ajusta el índice
+
 20-nov-21:
 
 -   Arreglo algunos elementos gráficos
@@ -54,7 +60,7 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 -   Se agrega como salida la generación de listados con las clasificaciones usadas en el reporte
 
--   Se mejoran algunos elementos de color  
+-   Se mejoran algunos elementos de color
 
 ## :framed_picture: Screenshots
 

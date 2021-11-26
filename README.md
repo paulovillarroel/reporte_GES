@@ -36,6 +36,10 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 ## :star: Novedades
 
+25-nov-21:
+
+-   Agrego algunas gráficas para analizar los tiempos de espera
+
 24-nov-21:
 
 -   Se agregan gráficos de tendencia con media móvil semanal

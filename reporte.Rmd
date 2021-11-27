@@ -79,11 +79,21 @@ total_ges <- rbind(ges_vigentes, ges_vencidas) |>
                                             "Vencido"
                                             )
                          ),
+         
          garantia = case_when(
            indice_resolucion > 1 ~ "Vencido",
            indice_resolucion <= 1 ~ "Vigente"
-           )
+           ),
+         
+         vence_15 = case_when(
+           fecha_limite - today() <= 15 & fecha_limite - today() >= 0 ~ TRUE,
+           TRUE ~ FALSE
+           ),
+         vence_7 = case_when(
+           fecha_limite - today() <= 7 & fecha_limite - today() >= 0 ~ TRUE,
+           TRUE ~ FALSE
          )
+  )
 
 total_ges <- inner_join(total_ges, etapas) |> 
   mutate(etapa = factor(etapa, levels = c("Consulta", 
@@ -116,8 +126,15 @@ write_xlsx(total_ges, paste0("data_clean/total_ges_", fecha_vencidas, ".xlsx"))
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 temp <- list.files(path = "./data_clean/",
                pattern = "total_ges*", 
-               full.names = TRUE) %>% 
-    map_df(~read_excel(.))
+               full.names = TRUE) %>%
+  map_df(~read_excel(.)) %>% 
+  mutate(riesgo = factor(riesgo, levels = c("Bajo", 
+                                   "Medio", 
+                                   "Alto", 
+                                   "Vencido"
+                                   )
+                         )
+                )
 
 integer_breaks <- function(n = 5, ...) {
   fxn <- function(x) {
@@ -166,9 +183,9 @@ DT::datatable(tabla_general,
               colnames = c("Problema de salud", "Estado", "Total")
               )
 ```
-&nbsp;
 
-# Total de garatías retrasadas
+
+# Análisis garantías retrasadas
 
 A continuación se muestran la distribución de las garantías retrasadas.
 
@@ -186,7 +203,7 @@ treemap(tabla_retrasadas,
         palette = "Blues"
         )
 ```
-&nbsp;
+
 
 ## Tabla de garantías retrasadas
 
@@ -207,7 +224,6 @@ DT::datatable(tabla_vencidos,
               )
 
 ```
-&nbsp;
 
 ## Evolución de garantías
 
@@ -222,7 +238,7 @@ evolucion_ret_plot <- temp %>%
                 media_movil = round(rollmean(n, k = 7, fill = NA), 1),
                 corte = ymd(corte)) %>% 
   ggplot(aes(corte, n)) +
-  geom_line(size = 1.5, color = "#cbc9e2", alpha = 0.8) +
+  geom_line(size = 1.5, color = "#cbc9e2", alpha = 0.7) +
   geom_point(size= 2, color = "#756bb1") +
   geom_line(aes(corte, media_movil), size = 1.5, alpha = 0.8,  linetype = "dotted", color = "#e9a3c9") +
   theme_bw() +
@@ -233,7 +249,6 @@ evolucion_ret_plot <- temp %>%
 ggplotly(evolucion_ret_plot)
 
 ```
-
 
 ## Variación diaria
 
@@ -273,7 +288,42 @@ variacion_plot <- rbind(variacion_vigentes, variacion_retrasos) %>%
 ggplotly(variacion_plot)
 
 ```
-&nbsp;
+
+## Tasa de resolución
+
+La tasa de resolución corresponde a la relación entre las garantías que se generan y aquellas que se van resolviendo para cada patología.\
+
+Interpretación de los valores:
+
+- Positivos: se resuelven más garantías de los que ingresan.
+- Neutros: se resuelve la misma cantidad de las que entran.
+- Negativos: se resuelven menos garantías de las que ingresan.
+
+
+```{r echo=FALSE, fig.height=9, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+indice_resolucion <- temp %>%
+  dplyr::group_by(problema_de_salud, corte) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::mutate(variacion = (n - lag(n)) * -1,
+                corte = ymd(corte),
+                indice = median(variacion, na.rm = TRUE),
+                tipo = case_when(
+                  indice > 0 ~ "Positivo",
+                  indice == 0 ~ "Neutro",
+                  indice < 0 ~ "Negativo"
+                  )
+                ) %>% 
+  ggplot(aes(indice, problema_de_salud, color = tipo,
+             text = paste("Indice:", indice, "\nProblema:", problema_de_salud, "\nValor:", tipo))) +
+  geom_point(size = 1.2) +
+  scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
+  theme_bw() +
+  labs(x = "Tasa de resolución",
+       y = "")
+
+ggplotly(indice_resolucion, tooltip = "text")
+  
+```
 
 
 ## Días de retraso por etapa
@@ -302,7 +352,6 @@ retrasos_etapa <- total_ges |>
 ggplotly(retrasos_etapa, tooltip = "text")
 
 ```
-&nbsp;
 
 ## Días de retraso por patología y etapa
 
@@ -325,7 +374,6 @@ plot_1 <- total_ges |>
 
 ggplotly(plot_1)
 ```
-&nbsp;
 
 ## Retraso por patología y etapa asistencial
   
@@ -352,7 +400,6 @@ plot_2 <- total_ges |>
 
 ggplotly(plot_2, tooltip = "text")
 ```
-&nbsp;
 
 ## Retraso por paciente y etapa asistencial
 
@@ -378,7 +425,6 @@ plot_3 <- total_ges |>
 
 ggplotly(plot_3, tooltip = "text")
 ```
-&nbsp;
 
 # Análisis por riesgo de vencimiento
 
@@ -387,8 +433,57 @@ Las patologías vigentes están clasificadas en 3 categorías, según su **riesg
 -   Riesgo bajo: están dentro del 35% del plazo legal transcurrido.
 -   Riesgo medio: están entre el 35% y 70% del plazo legal trancurrido.
 -   Riesgo alto: están por sobre el 70% del plazo legal transcurrido.
-
 &nbsp;
+
+## Garantías que vencen próximamente
+
+```{r include=FALSE}
+vencen_ges_15 <- total_ges %>% 
+  filter(vence_15 == TRUE) %>% 
+  count()
+vence_15 <- vencen_ges_15$n
+
+vencen_ges_7 <- total_ges %>% 
+  filter(vence_7 == TRUE) %>% 
+  count()
+vence_7 <- vencen_ges_7$n
+
+```
+
+Para los próximos 15 días, las garantías que vencen son `r vence_15`. Para los próximos 7 días, vencen `r vence_7`.\
+Las garantías que vencen dentro de los 7 días se distribuyen de la siguiente forma:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
+tabla_vence_7 <- total_ges %>% 
+  filter(vence_7 == TRUE) %>% 
+  dplyr::group_by(problema_de_salud, etapa) %>% 
+  dplyr::summarise(n = n()) %>% 
+  arrange(-n)
+
+DT::datatable(tabla_vence_7, 
+              options = list(orderClasses = FALSE), 
+              colnames = c("Problema de salud", "Etapa", "N°")
+              )
+```
+
+## Evolución de garantías por riesgo
+
+```{r echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+evolucion_riesgo <- temp %>% 
+  dplyr::group_by(riesgo, corte) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(corte, n, color = riesgo)) +
+  geom_line(size = 1.5, alpha = 0.7) +
+  geom_point( size = 2) +
+  #geom_smooth(se = FALSE, size = 0.5, linetype = "dotted", alpha = 0.5) +
+  scale_color_manual("Riesgo", values = c("#66c2a5", "#ffd92f", "#fb8072", "#756bb1")) +
+  theme_bw() +
+  labs(x = "",
+       y = "N° de garantías") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+ggplotly(evolucion_riesgo)
+```
 
 ## Riesgo por problema de salud
 
@@ -408,7 +503,6 @@ plot_4 <- total_ges |>
 
 ggplotly(plot_4)
 ```
-&nbsp;
 
 ## Riesgo por centro de responsabilidad
 
@@ -428,7 +522,6 @@ plot_5 <- total_ges |>
 
 ggplotly(plot_5)
 ```
-&nbsp;
 
 ## Riesgo por especialidad
 
@@ -448,7 +541,6 @@ plot_6 <- total_ges |>
 
 ggplotly(plot_6)
 ```
-&nbsp;
 
 ## Riesgo por etapa asistencial
 
@@ -468,7 +560,6 @@ plot_7 <- total_ges |>
 
 ggplotly(plot_7)
 ```
-&nbsp;
 &nbsp;
 
 # Casos oncológicos
@@ -499,7 +590,6 @@ DT::datatable(tabla_onco,
               colnames = c("Tipo riesgo", "N°")
               )
 ```
-&nbsp;
 
 ## Por tipo de riesgo y área de atención
 
@@ -523,7 +613,6 @@ plot_8 <- total_ges |>
 
 ggplotly(plot_8)
 ```
-&nbsp;
 
 ## Riesgo por centro de responsabilidad
 
@@ -546,7 +635,6 @@ plot_9 <- total_ges |>
 
 ggplotly(plot_9)
 ```
-&nbsp;
 
 ## Riesgo por patologías oncológicas
 
@@ -567,7 +655,6 @@ plot_10 <- total_ges |>
 
 ggplotly(plot_10) 
 ```
-&nbsp;
 
 ## Patologías oncológicas por etapa asistencial (todas)
 
@@ -588,7 +675,6 @@ plot_11 <- total_ges |>
 
 ggplotly(plot_11)
 ```
-&nbsp;
 
 ## Patologías oncológicas por etapa asistencial (retrasadas)
 
@@ -609,9 +695,8 @@ plot_12 <- total_ges |>
 
 ggplotly(plot_12)
 ```
-&nbsp;
 
-## Días de retraso por paciente y etapa asistencial
+## Días de retraso por problema y etapa asistencial
 
 Días de retraso (media) en sus garantías, agrupados por patología oncológica y por la etapa asistencial en la que se encuentran.
 
@@ -636,10 +721,8 @@ plot_13 <- total_ges |>
 
 ggplotly(plot_13, tooltip = "text")
 ```
-&nbsp;
 
 ## Evolución garantías retrasadas oncológicas
-&nbsp;
 
 ### Todas las garantías
 
@@ -667,7 +750,6 @@ plot_14 <- temp %>%
 
 ggplotly(plot_14)
 ```
-&nbsp;
 
 ### Garantías por tipo de atención
 
@@ -696,7 +778,6 @@ plot_15 <- temp %>%
 
 ggplotly(plot_15)
 ```
-&nbsp;
 
 ### Garantías ambulatorias por patología
 
@@ -723,7 +804,6 @@ plot_16 <- temp %>%
 
 ggplotly(plot_16)
 ```
-&nbsp;
 
 ### Garantías quirúrgicas por patología
 
@@ -751,9 +831,6 @@ plot_17 <- temp %>%
 ggplotly(plot_17)
 ```
 
-&nbsp;
-&nbsp;
-
 # Por área de atención
 
 ## Patologías ambulatorias
@@ -775,7 +852,6 @@ plot_18 <- total_ges |>
 
 ggplotly(plot_18)
 ```
-&nbsp;
 
 ## Patologías quirúrgicas
 

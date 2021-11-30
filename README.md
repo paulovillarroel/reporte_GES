@@ -36,6 +36,10 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 ## :star: Novedades
 
+29-nov-21:
+
+-   Agrego una nueva paleta de colores para los gráficos
+
 27-nov-21:
 
 -   Agrego análisis con tasa de resolución de garantías

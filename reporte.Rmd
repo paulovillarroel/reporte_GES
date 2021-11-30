@@ -12,7 +12,7 @@ output:
 ---
 
 ```{r set-options, cache=FALSE, include=FALSE}
-options(width = 1000)
+options(width = 1200)
 ```
 
 ```{r setup, include=FALSE}
@@ -32,7 +32,8 @@ library(plotly)
 library(lubridate)
 library(kableExtra)
 library(treemap)
-library(RColorBrewer)
+#library(RColorBrewer)
+library(paletteer)
 library(writexl)
 library(data.table)
 library(scales)
@@ -289,14 +290,14 @@ ggplotly(variacion_plot)
 
 ```
 
-## Tasa de resolución
+## Índice de resolución
 
-La tasa de resolución corresponde a la relación entre las garantías que se generan y aquellas que se van resolviendo para cada patología.\
+El índice de resolución corresponde a la relación entre las garantías que se generan y aquellas que se van resolviendo para cada patología.\
 
 Interpretación de los valores:
 
 - Positivos: se resuelven más garantías de los que ingresan.
-- Neutros: se resuelve la misma cantidad de las que entran.
+- Neutros: se resuelve la misma cantidad de las que ingresan.
 - Negativos: se resuelven menos garantías de las que ingresan.
 
 
@@ -318,7 +319,7 @@ indice_resolucion <- temp %>%
   geom_point(size = 1.2) +
   scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
   theme_bw() +
-  labs(x = "Tasa de resolución",
+  labs(x = "Índice de resolución",
        y = "")
 
 ggplotly(indice_resolucion, tooltip = "text")
@@ -386,13 +387,17 @@ plot_2 <- total_ges |>
   dplyr::summarise(dias = round(sum(dias_retraso)/ n(), 1),
                    n = n()) |> 
   ggplot(aes(dias, n, 
-             text = paste("Problema:", problema_de_salud, "\nN° casos:", n, "\nEspera media:", dias, "días", "\nEtapa:", etapa), 
-             color = etapa)) +
-  geom_jitter(size = 3) +
-  
-  scale_color_manual(name = "Tipo de etapa",
+             text = paste("Problema:", problema_de_salud, 
+                          "\nN° casos:", n, 
+                          "\nEspera media:", dias, "días", 
+                          "\nEtapa:", etapa), 
+             color = etapa)
+         ) +
+  geom_jitter(size = 2.3, alpha = 0.8) +
+  scale_color_manual(name = "Etapa",
                      values = c("#8dd3c7", "#ffed6f", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#d9d9d9")) +
   theme_bw() +
+  theme(legend.position = "right") +
   labs(
   x = "Días de espera (media)",
   y = "N° de casos"
@@ -401,9 +406,9 @@ plot_2 <- total_ges |>
 ggplotly(plot_2, tooltip = "text")
 ```
 
-## Retraso por paciente y etapa asistencial
+## Retraso por paciente, especialidad y etapa
 
-```{r echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+```{r echo=FALSE, fig.height=7, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
 plot_3 <- total_ges |> 
   filter(riesgo == "Vencido") |>
   ggplot(aes(dias_retraso, etapa, 
@@ -411,13 +416,14 @@ plot_3 <- total_ges |>
                           "\nRUT:", rut, "-", dv,
                           "\nProblema:",
                           problema_de_salud, 
+                          "\nEspecialidad", especialidad,
                           "\nRetraso:", dias_retraso, "días", 
                           "\nEtapa:", etapa), 
-             color = etapa)) +
-  geom_jitter(size = 3) +
-  scale_color_manual(values = c("#8dd3c7", "#ffed6f", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#d9d9d9")) +
+             color = especialidad)) +
+  geom_jitter(size = 2, alpha = 0.6) +
+  #scale_color_manual(values = c("#8dd3c7", "#ffed6f", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#d9d9d9")) +
   theme_bw() +
-  theme(legend.position = "none") +
+  #theme(legend.position = "none") +
   labs(
   x = "Días de espera",
   y = ""
@@ -474,7 +480,7 @@ evolucion_riesgo <- temp %>%
   dplyr::summarise(n = n()) %>% 
   ggplot(aes(corte, n, color = riesgo)) +
   geom_line(size = 1.5, alpha = 0.7) +
-  geom_point( size = 2) +
+  geom_point(size = 2) +
   #geom_smooth(se = FALSE, size = 0.5, linetype = "dotted", alpha = 0.5) +
   scale_color_manual("Riesgo", values = c("#66c2a5", "#ffd92f", "#fb8072", "#756bb1")) +
   theme_bw() +
@@ -709,7 +715,7 @@ plot_13 <- total_ges |>
   ggplot(aes(dias, n, 
              text = paste("Problema:", problema_de_salud, "\nN° casos:", n, "\nEspera media:", dias, "días", "\nEtapa:", etapa), 
              color = etapa)) +
-  geom_jitter(size = 3) +
+  geom_jitter(size = 3, alpha = 0.8) +
   
   scale_color_manual(name = "Tipo de etapa",
                      values = c("#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3")) +
@@ -722,33 +728,59 @@ plot_13 <- total_ges |>
 ggplotly(plot_13, tooltip = "text")
 ```
 
+## Retraso por paciente, especialidad y etapa
+
+```{r echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+plot_14 <- total_ges |> 
+  filter(riesgo == "Vencido", onco == TRUE) |>
+  ggplot(aes(dias_retraso, etapa, 
+             text = paste(nombre, 
+                          "\nRUT:", rut, "-", dv,
+                          "\nProblema:",
+                          problema_de_salud, 
+                          "\nEspecialidad", especialidad,
+                          "\nRetraso:", dias_retraso, "días", 
+                          "\nEtapa:", etapa), 
+             color = especialidad)) +
+  geom_jitter(size = 2.5, alpha = 0.8) +
+  theme_bw() +
+  labs(
+  x = "Días de espera",
+  y = ""
+  ) 
+
+ggplotly(plot_14, tooltip = "text")
+```
+
 ## Evolución garantías retrasadas oncológicas
 
 ### Todas las garantías
 
-A continuación se muestra la evolución en el tiempo del número de garantías retrasadas oncológicas.
+A continuación se muestra la evolución en el tiempo del número de garantías retrasadas oncológicas.\
+Se incluye la media móvil semanal del total de garantías oncológicas retrasadas.
 
 ```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_14 <- temp %>% 
+plot_15 <- temp %>% 
   mutate(corte = ymd(corte)) %>% 
   filter(garantia == "Vencido", onco == TRUE) %>% 
   dplyr::group_by(corte) %>% 
   dplyr::summarise(n = n()) %>% 
+  dplyr::mutate(media_movil = round(rollmean(n, k = 7, fill = NA), 1)) %>% 
   ggplot(aes(corte, n)) +
   geom_line(size = 1.5, color = "#cbc9e2") +
   geom_point(size= 2, color = "#756bb1") +
+  geom_line(aes(corte, media_movil), size = 1.5, alpha = 0.8,  linetype = "dotted", color = "#e9a3c9") +
   scale_y_continuous(breaks = integer_breaks()) + 
   scale_x_date(date_labels = "%b %d") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "none") +
   labs(
-    #title = "Todas las garantías retrasadas",
     x = "",
     y = "N° garantías retrasadas"
   )
 
-ggplotly(plot_14)
+ggplotly(plot_15)
 ```
 
 ### Garantías por tipo de atención
@@ -756,7 +788,7 @@ ggplotly(plot_14)
 Evolución en el tiempo de las grantías oncológicas retrasadas, dividadas por tipo de atención.
 
 ```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_15 <- temp %>% 
+plot_16 <- temp %>% 
   mutate(corte = ymd(corte)) %>% 
   filter(garantia == "Vencido", onco == TRUE) %>% 
   dplyr::group_by(corte, tipo) %>% 
@@ -776,23 +808,24 @@ plot_15 <- temp %>%
     y = "N° garantías retrasadas"
   )
 
-ggplotly(plot_15)
+ggplotly(plot_16)
 ```
 
 ### Garantías ambulatorias por patología
 
 ```{r echo=FALSE,fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_16 <- temp %>% 
+plot_17 <- temp %>% 
   mutate(corte = ymd(corte)) %>% 
   filter(garantia == "Vencido", onco == TRUE, tipo == "Ambulatorio") %>% 
   dplyr::group_by(tipo, problema_de_salud, corte) %>% 
   dplyr::summarise(n = n()) %>% 
   ggplot(aes(corte, n, color = problema_de_salud)) +
-  geom_line(size = 0.7) +
+  geom_line(size = 0.7, alpha = 0.8) +
   geom_point(size = 1.2) +
   scale_y_continuous(breaks = integer_breaks()) + 
   scale_x_date(date_labels = "%b %d") +
-  #scale_color_brewer(palette = "Accent") +
+  #scale_color_brewer(palette = "Set3") +
+  scale_color_paletteer_d(`"miscpalettes::pastel"`) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "none") +
@@ -802,23 +835,24 @@ plot_16 <- temp %>%
     y = "N° garantías retrasadas"
   )
 
-ggplotly(plot_16)
+ggplotly(plot_17)
 ```
 
 ### Garantías quirúrgicas por patología
 
 ```{r echo=FALSE, fig.height=4.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_17 <- temp %>% 
+plot_18 <- temp %>% 
   mutate(corte = ymd(corte)) %>% 
   filter(garantia == "Vencido", onco == TRUE, tipo == "Quirúrgico") %>% 
   dplyr::group_by(tipo, problema_de_salud, corte) %>% 
   dplyr::summarise(n = n()) %>% 
   ggplot(aes(corte, n, color = problema_de_salud)) +
-  geom_line(size = 0.7) +
+  geom_line(size = 0.7, alpha = 0.6) +
   geom_point(size = 1.2) +
   scale_y_continuous(breaks = integer_breaks()) + 
   scale_x_date(date_labels = "%b %d") +
-  #scale_color_brewer(palette = "Accent") +
+  #scale_color_brewer(palette = "Set3") +
+  scale_color_paletteer_d(`"miscpalettes::pastel"`) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "right") +
@@ -828,7 +862,7 @@ plot_17 <- temp %>%
     y = "N° garantías retrasadas"
   )
 
-ggplotly(plot_17)
+ggplotly(plot_18)
 ```
 
 # Por área de atención
@@ -836,7 +870,7 @@ ggplotly(plot_17)
 ## Patologías ambulatorias
 
 ```{r echo=FALSE, fig.height=7.5, message=FALSE, warning=FALSE, out.width="100%"}
-plot_18 <- total_ges |> 
+plot_19 <- total_ges |> 
   filter(tipo == "Ambulatorio") |> 
   group_by(problema_de_salud, riesgo) |> 
   summarise(n_casos = n()) |> 
@@ -850,13 +884,13 @@ plot_18 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_18)
+ggplotly(plot_19)
 ```
 
 ## Patologías quirúrgicas
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
-plot_19 <- total_ges |> 
+plot_20 <- total_ges |> 
   filter(tipo == "Quirúrgico") |> 
   group_by(problema_de_salud, riesgo) |> 
   summarise(n_casos = n()) |> 
@@ -870,7 +904,7 @@ plot_19 <- total_ges |>
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
-ggplotly(plot_19)
+ggplotly(plot_20)
 ```
 
 

@@ -228,6 +228,8 @@ DT::datatable(tabla_vencidos,
 
 ## Evolución de garantías
 
+### Todas las garantías retrasadas
+
 Se incluye la media móvil semanal.
 
 ```{r echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
@@ -250,6 +252,37 @@ evolucion_ret_plot <- temp %>%
 ggplotly(evolucion_ret_plot)
 
 ```
+
+### Por centro de responsabilidad
+
+```{r echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+plot_centro_resp <- temp %>% 
+  filter(garantia == "Vencido") %>% 
+  dplyr::group_by(centro_responsabilidad, corte) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::mutate(media_movil = round(rollmean(n, k = 7, fill = NA), 1),
+                corte = ymd(corte)) %>% 
+  ggplot(aes(corte, media_movil,
+             text = paste("Corte:", corte,
+                          "\nMedia móvil:", media_movil,
+                          "\nCR:", centro_responsabilidad),
+             group = centro_responsabilidad
+             )) +
+  geom_line(aes(color = centro_responsabilidad), size = 1.1, alpha = 0.7) +
+  geom_point(aes(color = centro_responsabilidad), size = 1.4) +
+  scale_y_continuous(breaks = integer_breaks()) +
+  theme_bw() +
+  scale_color_paletteer_d(`"miscpalettes::pastel"`) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = "",
+       y = "Garantías retrasadas (media móvil)",
+       color = "Área")
+
+
+  ggplotly(plot_centro_resp, tooltip = "text")
+  
+```
+
 
 ## Variación diaria
 
@@ -276,9 +309,9 @@ variacion_retrasos <- temp %>%
 
 variacion_plot <- rbind(variacion_vigentes, variacion_retrasos) %>% 
   ggplot(aes(corte, variacion, color = tipo)) +
-  geom_path(size = 1, alpha = 0.5,  linetype = "dotted") +
-  geom_point(size = 1.5, alpha = 0.8) +
-  geom_line(aes(corte, media_movil), size = 2) +
+  geom_path(size = 0.8, alpha = 0.4,  linetype = "dotted") +
+  geom_point(size = 1, alpha = 0.6) +
+  geom_line(aes(corte, media_movil), size = 1.5) +
   geom_hline(yintercept = 0, color = "#c51b7d") +
   theme_bw() +
   scale_color_manual(name = "Tipo garantía", values = c("#af8dc3", "#7fbf7b")) +
@@ -292,7 +325,13 @@ ggplotly(variacion_plot)
 
 ## Índice de resolución
 
+```{r include=FALSE}
+fecha_min <- min(temp$corte)
+fecha_max <- max(temp$corte)
+```
+
 El índice de resolución corresponde a la relación entre las garantías que se generan y aquellas que se van resolviendo para cada patología.\
+Los datos mostrados fueron calculados para el período comprendido entre el `r fecha_min` y el `r fecha_max`.\
 
 Interpretación de los valores:
 
@@ -301,7 +340,7 @@ Interpretación de los valores:
 - Negativos: se resuelven menos garantías de las que ingresan.
 
 
-```{r echo=FALSE, fig.height=9, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+```{r echo=FALSE, fig.height=8.5, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
 indice_resolucion <- temp %>%
   dplyr::group_by(problema_de_salud, corte) %>% 
   dplyr::summarise(n = n()) %>% 
@@ -315,7 +354,9 @@ indice_resolucion <- temp %>%
                   )
                 ) %>% 
   ggplot(aes(indice, problema_de_salud, color = tipo,
-             text = paste("Indice:", indice, "\nProblema:", problema_de_salud, "\nValor:", tipo))) +
+             text = paste("Indice:", indice, 
+                          "\nProblema:", problema_de_salud, 
+                          "\nValor:", tipo))) +
   geom_point(size = 1.2) +
   scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
   theme_bw() +

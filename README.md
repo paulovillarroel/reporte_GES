@@ -36,43 +36,7 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 ## :star: Novedades
 
-29-nov-21:
-
--   Agrego una nueva paleta de colores para los gráficos
-
-27-nov-21:
-
--   Agrego análisis con tasa de resolución de garantías
-
-25-nov-21:
-
--   Agrego algunas gráficas para analizar los tiempos de espera
-
-24-nov-21:
-
--   Se agregan gráficos de tendencia con media móvil semanal
-
--   Se ajusta el índice
-
-20-nov-21:
-
--   Arreglo algunos elementos gráficos
-
--   Agrego una descripción a varios gráficos
-
-18-nov-21:
-
--   Arreglo algunos bugs
-
--   Agrego gráfico resumen de garantías retrasadas por etapa asistencial
-
-17-nov-21:
-
--   Se agregan varios gráficos para analizar la tendencia de la evolución de las garantías retrasadas
-
--   Se agrega como salida la generación de listados con las clasificaciones usadas en el reporte
-
--   Se mejoran algunos elementos de color
+Puedes encontrar las novededes (changelog) del informe en el [foro de discusión.](https://github.com/paulovillarroel/reporte_GES/discussions/3) 
 
 ## :framed_picture: Screenshots
 
@@ -96,4 +60,5 @@ Ejemplos:
 
 Si encuentras errores en el código o quieres agregar nuevas funcionalidades, definitivamente eres bienvenido/a a crear un Pull Request para mejorar el reporte.
 
-Considera [crear una `issue`](https://github.com/paulovillarroel/reporte_GES/issues) si encuentras algo o tienes alguna duda.
+Considera [crear una `issue`](https://github.com/paulovillarroel/reporte_GES/issues) si encuentras algo o tienes alguna duda.\
+Tambien puedes [crear un foro de discusión](https://github.com/paulovillarroel/reporte_GES/discussions) para conversar del tema.

@@ -1,1 +1,2 @@
-Este archivo es solo para subir carpeta a repo remoto
+Este archivo es solo para subir la carpeta al repo remoto
+Puedes eliminar este archivo si quieres.

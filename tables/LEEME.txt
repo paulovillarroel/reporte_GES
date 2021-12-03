@@ -1,0 +1,9 @@
+** Este archivo debes configurarlo antes de generar los reportes **
+
+Solo debes hacerlo la primera vez. Dédicale unos minutos para que todo salga bien.
+
+El archivo listado_etapas_GES.xlsx es el que te permitirá generar varios de los análisis del reporte.
+Tiene varias columnas que se unirán a los archivos del SIGGES. Básicamente, este archivo permite clasificar a las patologías en varios otros tipos.
+
+En general, no deberías tener que hacer mucho, pero te recomiento encarecidamente que revises que se ajusta a tu institución. En especial, fíjate en la columna CENTRO_RESPONSABILIDAD. En esa columna se especifica el centro de responsabilidad que tiene la responsabilidad para cada patología y garantía. Hay algunas garantías que salen OFICINA GES. Esto es porque en mi hospital la distribución de responsabilidad de gestión es así. Revísalo y cámbialo, según corresponda a tu hospital. 
+

@@ -1,20 +1,27 @@
 En esta carpeta (/data_raw) coloca los archivos Excel descargados desde SIGGES.
 Los reportes corresponden a las garantías vigentes (todas) y retrasadas.
 No elimines ni modiques los archivos descargados. Solo guárdalos con formato xlsx.
-Revisa bien ese tema, pues si guardas directamente el archivo que se descarga del SIGGES queda como una página web. Te recomiendo seleccionar la opción de GUARDAR en el menú que aparece cuando haces clic para descargar. Cuando tengas el archivo descargado en la carpeta de tu preferencia, ábrelo. Es posible que te salgan algunos errores, pero sigue adelante. Con el archivo Excel abierto, selecciona GUARDAR COMO y cambia el formaro de web a libro de Excel.
+Revisa bien ese tema, pues si guardas directamente el archivo que se descarga del SIGGES queda como una página web.
+Te recomiendo seleccionar la opción de GUARDAR en el menú que aparece cuando haces clic para descargar. Cuando tengas
+el archivo descargado en la carpeta de tu preferencia, ábrelo. Es posible que te salgan algunos errores, pero sigue
+adelante. Con el archivo Excel abierto, selecciona GUARDAR COMO y cambia el formaro de web a libro de Excel.
 
 Guarda los archivos con los siguientes nombres:
 vigentes.xlsx
 vencidas.xlsx
 
 Ojo. No cambies esos nombres!!
-Tampoco le hagas cambios. No le borres filas ni columnas, ni nada. Déjalo tal cual. Solo ajusta el formato a xlsx como te dije.
+Tampoco le hagas cambios. No le borres filas ni columnas, ni nada. Déjalo tal cual. Solo ajusta el formato a xlsx
+como te dije.
 
 
 **Para usar la nueva funcionalidad de evolución de las garantías:
-Se ha incluído la posibilidad de que cada vez que actualices los 2 archivos anteriores, se generará como salida un archivo resumen con todas las columnas nuevas en la carpeta /data_clean.
+Se ha incluído la posibilidad de que cada vez que actualices los 2 archivos anteriores, se generará como salida un
+archivo resumen con todas las columnas nuevas en la carpeta /data_clean.
 El archivo generado toma la fecha en que son descargadas de SIGGES y lo utiliza para marcarlo. 
-En la medida que reescribas diariamente los archivos de vigentes y vencidos, obtendrás un nuevo archivo en /data_clean cada uno con la fecha de descarga. 
+En la medida que reescribas diariamente los archivos de vigentes y vencidos, obtendrás un nuevo archivo
+en /data_clean cada uno con la fecha de descarga. 
 Esos archivos serán utilizados para gererar la evolución de las garantías.
 
-Te recomiendo que la actualización sea diaria. Es decir, que descargues todos los días los 2 archivos y los actualices en el reporte. Eso dará más robuztez a los gráficos, pues vas a tener más datos para analizar.
+Te recomiendo que la actualización sea diaria. Es decir, que descargues todos los días los 2 archivos y los
+actualices en el reporte. Eso dará más robuztez a los gráficos, pues vas a tener más datos para analizar.

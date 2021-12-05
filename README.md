@@ -20,7 +20,7 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 -   Requiere conocimientos en R Markdown (básicos)  
 
-# :construction_worker: Uso
+## :construction_worker: Uso
 
 1.  Clona este repositorio en tu repositorio local
 
@@ -34,13 +34,13 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 6.  Knit `reporte.Rmd` con salida HTML
 
-# :rescue_worker_helmet: Ayuda
+## :rescue_worker_helmet: Ayuda
 
 Acá te dejo un algunas cosas para ayudarte a instalar el reporte y usarlo sin problemas:
 
 -   Revisa [cómo descargar y guardar](https://github.com/paulovillarroel/reporte_GES/blob/main/Ayuda_descarga_sigges.pdf) los archivos desde SIGGES
 
--   [Tutorial](https://youtu.be/PjxncEXWgHU) en video de cómo configurar el sistema y RStudio
+-   [Tutorial](https://youtu.be/PjxncEXWgHU) en video de cómo configurar el sistema y RStudio Cloud
 
 -   No te olvides de leer los archivos de texto incluídos en algunas carpetas con más consejos
 

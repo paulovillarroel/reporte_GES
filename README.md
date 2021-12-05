@@ -40,7 +40,7 @@ Acá te dejo un algunas cosas para ayudarte a instalar el reporte y usarlo sin p
 
 -   Revisa [cómo descargar y guardar](https://github.com/paulovillarroel/reporte_GES/blob/main/Ayuda_descarga_sigges.pdf) los archivos desde SIGGES
 
--   [Tutorial](https://youtu.be/PjxncEXWgHU) de cómo configurar el sistema y RStudio
+-   [Tutorial](https://youtu.be/PjxncEXWgHU) en video de cómo configurar el sistema y RStudio
 
 -   No te olvides de leer los archivos de texto incluídos en algunas carpetas con más consejos
 

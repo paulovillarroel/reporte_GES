@@ -32,11 +32,23 @@ Reporte automático del estado de garantías GES (Garantías Explícitas en Salu
 
 5.  Abre el proyecto `reporte_GES` en RStudio
 
-6.  Knit `reporte.Rmd` con salida HTML  
+6.  Knit `reporte.Rmd` con salida HTML
+
+# :rescue_worker_helmet: Ayuda
+
+Acá te dejo un algunas cosas para ayudarte a instalar el reporte y usarlo sin problemas:
+
+-   Revisa [cómo descargar y guardar](https://github.com/paulovillarroel/reporte_GES/blob/main/Ayuda_descarga_sigges.pdf) los archivos desde SIGGES
+
+-   [Tutorial](https://youtu.be/PjxncEXWgHU) de cómo configurar el sistema y RStudio
+
+-   No te olvides de leer los archivos de texto incluídos en algunas carpetas con más consejos
+
+**¿Dudas?** [Déjalas en el foro.](https://github.com/paulovillarroel/reporte_GES/discussions)
 
 ## :star: Novedades
 
-Puedes encontrar las novededes (changelog) del informe en el [foro de discusión.](https://github.com/paulovillarroel/reporte_GES/discussions/3) 
+Puedes encontrar las novededes (changelog) del informe en el [foro de discusión.](https://github.com/paulovillarroel/reporte_GES/discussions/3)
 
 ## :framed_picture: Screenshots
 
@@ -60,5 +72,5 @@ Ejemplos:
 
 Si encuentras errores en el código o quieres agregar nuevas funcionalidades, definitivamente eres bienvenido/a a crear un Pull Request para mejorar el reporte.
 
-Considera [crear una `issue`](https://github.com/paulovillarroel/reporte_GES/issues) si encuentras algo o tienes alguna duda.\
+Considera [crear una `issue`](https://github.com/paulovillarroel/reporte_GES/issues) si encuentras algo o tienes alguna duda.
 Tambien puedes [crear un foro de discusión](https://github.com/paulovillarroel/reporte_GES/discussions) para conversar del tema.

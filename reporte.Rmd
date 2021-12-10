@@ -26,12 +26,7 @@ knitr::opts_chunk$set(
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 packages <- c(
-  "dplyr",
-  "purrr",
-  "stringr",
-  "forcats",
-  "ggplot2",
-  "tidyr",
+  "tidyverse",
   "janitor",
   "readxl",
   "plotly",
@@ -42,7 +37,6 @@ packages <- c(
   "writexl",
   "data.table",
   "scales",
-  "DT",
   "zoo"
 )
 
@@ -80,6 +74,7 @@ total_ges <- rbind(ges_vigentes, ges_vencidas) |>
     ),
     fecha_de_inicio = ymd(fecha_de_inicio),
     fecha_limite = ymd(fecha_limite),
+    rut = as.character(rut), 
     plazo_ges = as.numeric(fecha_limite - fecha_de_inicio),
     dias_avanzados = as.numeric(today() - fecha_de_inicio),
     dias_retraso = ifelse(fecha_limite >= today(), NA_integer_, as.numeric(today() - fecha_limite)),
@@ -88,7 +83,8 @@ total_ges <- rbind(ges_vigentes, ges_vencidas) |>
     indice_resolucion = dias_avanzados / plazo_ges,
     riesgo = case_when(
       indice_resolucion > 1 ~ "Vencido",
-      indice_resolucion >= 0.7 ~ "Alto",
+      indice_resolucion >= 0.9 ~ "Muy alto",
+      indice_resolucion < 0.9 & indice_resolucion >= 0.7 ~ "Alto",
       indice_resolucion < 0.7 & indice_resolucion >= 0.35 ~ "Medio",
       indice_resolucion < 0.35 ~ "Bajo"
     ),
@@ -96,6 +92,7 @@ total_ges <- rbind(ges_vigentes, ges_vencidas) |>
       "Bajo",
       "Medio",
       "Alto",
+      "Muy alto",
       "Vencido"
     )),
     garantia = case_when(
@@ -128,9 +125,17 @@ fecha_vigentes <- read_excel("data_raw/vigentes.xlsx")[1, 1] %>%
   mutate(corte = dmy(str_extract(`Para Grabar presione F12`, "(\\d+/*\\d+/*\\d+)")))
 fecha_vigentes <- fecha_vigentes$corte
 
+hora_vigentes <- read_excel("data_raw/vigentes.xlsx")[1, 1] %>%
+  mutate(hora = str_extract(`Para Grabar presione F12`, "\\d{2}:\\d{2}:\\d{2}"))
+hora_vigentes <- as.character(hora_vigentes$hora)
+
 fecha_vencidas <- read_excel("data_raw/vencidas.xlsx")[1, 1] %>%
   mutate(corte = dmy(str_extract(`Para Grabar presione F12`, "(\\d+/*\\d+/*\\d+)")))
 fecha_vencidas <- fecha_vencidas$corte
+
+hora_vencidas <- read_excel("data_raw/vencidas.xlsx")[1, 1] %>%
+  mutate(hora = str_extract(`Para Grabar presione F12`, "\\d{2}:\\d{2}:\\d{2}"))
+hora_vencidas <- as.character(hora_vencidas$hora)
 
 total_ges$corte <- fecha_vencidas
 
@@ -150,6 +155,7 @@ temp <- list.files(
     "Bajo",
     "Medio",
     "Alto",
+    "Muy alto",
     "Vencido"
   )))
 
@@ -170,6 +176,38 @@ total_vencidos <- total_ges |>
 ```
 
 Este informe fue generado a partir de la información disponible en SIGGES.    
+
+-   Nómina vigentes generada el `r fecha_vigentes` a las `r hora_vigentes`
+-   Nómina vencidas generada el `r fecha_vencidas` a las `r hora_vencidas`
+
+&nbsp;
+
+# Indicadores globales
+
+```{r echo=FALSE}
+total_garantias <- total_ges %>% 
+  count()
+total_vigentes <- total_ges %>% 
+  filter(garantia == "Vigente") %>% 
+  count()
+total_retrasadas <- total_ges %>% 
+  filter(garantia == "Vencido") %>% 
+  count()
+total_onco <- total_ges %>% 
+  filter(onco == TRUE) %>% 
+  count()
+total_onco_retrasadas <- total_ges %>% 
+  filter(garantia == "Vencido", onco == TRUE) %>% 
+  count()
+```
+
+Total garantías: `r total_garantias$n`\
+Total garantías vigentes: `r total_vigentes$n`\
+Total garantías retrasadas: `r total_retrasadas$n`\
+Total garantías oncológicas: `r total_onco$n`\
+Total garantías oncológicas retrasadas: `r total_onco_retrasadas$n`\
+Porcentaje garantías retrasadas: `r round((total_retrasadas$n / total_garantias$n) * 100, 1)`% (meta < 5%)\
+Porcentaje garantías oncológicas retrasadas: `r round((total_onco_retrasadas$n / total_retrasadas$n) * 100, 1)`% (meta < 2%)
 
 # Total de garantías
 
@@ -349,30 +387,33 @@ variacion_plot <- rbind(variacion_vigentes, variacion_retrasos) %>%
 ggplotly(variacion_plot)
 ```
 
-## Índice de resolución
+## Índice de resolución (retrasadas)
 
 ```{r include=FALSE}
 fecha_min <- min(temp$corte)
 fecha_max <- max(temp$corte)
 ```
 
-El índice de resolución corresponde a la relación entre las garantías que se generan y aquellas que se van resolviendo para cada patología.\
+El índice de resolución corresponde a la relación entre las garantías que se van venciendo y aquellas retrasadas que se resuelven para cada patología.\
 Los datos mostrados fueron calculados para el período comprendido entre el `r fecha_min` y el `r fecha_max`.\
 
 Interpretación de los valores:
 
--   Positivos: se resuelven más garantías de los que ingresan.
--   Neutros: se resuelve la misma cantidad de las que ingresan.
--   Negativos: se resuelven menos garantías de las que ingresan.
+-   Positivos: se resuelven más garantías de las que se vencen.
+-   Neutros: se resuelve la misma cantidad de las que se vencen.
+-   Negativos: se resuelven menos garantías de las que se vencen.
+
+### Por patología
 
 ```{r echo=FALSE, fig.height=8.5, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
-indice_resolucion <- temp %>%
+indice_resolucion_patologia <- temp %>%
+  dplyr::filter(garantia == "Vencido") %>% 
   dplyr::group_by(problema_de_salud, corte) %>%
   dplyr::summarise(n = n()) %>%
   dplyr::mutate(
     variacion = (n - lag(n)) * -1,
     corte = ymd(corte),
-    indice = median(variacion, na.rm = TRUE),
+    indice = mean(variacion, na.rm = TRUE),
     tipo = case_when(
       indice > 0 ~ "Positivo",
       indice == 0 ~ "Neutro",
@@ -382,12 +423,13 @@ indice_resolucion <- temp %>%
   ggplot(aes(indice, problema_de_salud,
     color = tipo,
     text = paste(
-      "Indice:", indice,
+      "Indice:", round(indice, 1),
       "\nProblema:", problema_de_salud,
       "\nValor:", tipo
     )
   )) +
-  geom_point(size = 1.2) +
+  geom_vline(xintercept = 0, color = "#9e9ac8") +
+  geom_point(size = 1.3) +
   scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
   theme_bw() +
   labs(
@@ -395,7 +437,44 @@ indice_resolucion <- temp %>%
     y = ""
   )
 
-ggplotly(indice_resolucion, tooltip = "text")
+ggplotly(indice_resolucion_patologia, tooltip = "text")
+```
+
+### Por especialidad
+
+```{r echo=FALSE, fig.height=7, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+indice_resolucion_patologia <- temp %>%
+  dplyr::filter(garantia == "Vencido") %>% 
+  dplyr::group_by(especialidad, corte) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(
+    variacion = (n - lag(n)) * -1,
+    corte = ymd(corte),
+    indice = mean(variacion, na.rm = TRUE),
+    tipo = case_when(
+      indice > 0 ~ "Positivo",
+      indice == 0 ~ "Neutro",
+      indice < 0 ~ "Negativo"
+    )
+  ) %>%
+  ggplot(aes(indice, especialidad,
+    color = tipo,
+    text = paste(
+      "Indice:", round(indice, 1),
+      "\nEspecialidad:", especialidad,
+      "\nValor:", tipo
+    )
+  )) +
+  geom_vline(xintercept = 0, color = "#9e9ac8") +
+  geom_point(size = 1.3) +
+  scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
+  theme_bw() +
+  labs(
+    x = "Índice de resolución",
+    y = ""
+  )
+
+ggplotly(indice_resolucion_patologia, tooltip = "text")
 ```
 
 ## Días de retraso por etapa
@@ -508,7 +587,9 @@ Las patologías vigentes están clasificadas en 3 categorías, según su **riesg
 
 -   Riesgo bajo: están dentro del 35% del plazo legal transcurrido.
 -   Riesgo medio: están entre el 35% y 70% del plazo legal trancurrido.
--   Riesgo alto: están por sobre el 70% del plazo legal transcurrido.  
+-   Riesgo alto: están entre el 70% y el 90% del plazo legal transcurrido. 
+-   Riesgo muy alto: están por sobre el 90% del tiempo legal transcurrido.\
+
 
 ## Garantías que vencen próximamente
 
@@ -547,10 +628,10 @@ evolucion_riesgo <- temp %>%
   dplyr::group_by(riesgo, corte) %>%
   dplyr::summarise(n = n()) %>%
   ggplot(aes(corte, n, color = riesgo)) +
-  geom_line(size = 1.5, alpha = 0.7) +
-  geom_point(size = 2) +
+  geom_line(size = 1.2, alpha = 0.7) +
+  geom_point(size = 1.8) +
   # geom_smooth(se = FALSE, size = 0.5, linetype = "dotted", alpha = 0.5) +
-  scale_color_manual("Riesgo", values = c("#66c2a5", "#ffd92f", "#fb8072", "#756bb1")) +
+  scale_color_manual("Riesgo", values = c("#66c2a5", "#ffd92f", "#fd8d3c", "#bd0026", "#756bb1")) +
   theme_bw() +
   labs(
     x = "",
@@ -559,6 +640,33 @@ evolucion_riesgo <- temp %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
 ggplotly(evolucion_riesgo)
+```
+
+## Patologías en riesgo muy alto
+
+```{r echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+pacientes_mayor_riesgo <- total_ges |>
+  filter(riesgo  == "Muy alto") |>
+  dplyr::group_by(problema_de_salud, etapa) %>% 
+  dplyr::summarise(n = n(),
+                   dias_restantes = median(today() - fecha_limite)) %>% 
+  ggplot(aes(dias_restantes, n,
+    text = paste(
+                 "\nPatología:", problema_de_salud,
+                 "\nEtapa:", etapa,
+                 "\nN° casos:", n,
+                 "\nDías restantes:", round(dias_restantes, 0) * -1)
+  )) +
+  geom_jitter(aes(color = etapa), size = 2.5, alpha = 0.7) +
+  theme_bw() +
+  #theme(legend.position = "none") +
+  labs(
+    x = "Días restantes para vencimiento",
+    y = "N° de garantías"
+  )
+
+ggplotly(pacientes_mayor_riesgo, tooltip = "text")
+
 ```
 
 ## Riesgo por problema de salud
@@ -643,6 +751,8 @@ ggplotly(plot_7)
 
 ## Por tipo de riesgo
 
+### Tabla
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 total_onco <- total_ges |>
   filter(onco == TRUE) |>
@@ -668,6 +778,23 @@ DT::datatable(tabla_onco,
 )
 ```
 
+### Distribución 
+ 
+```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="100%"}
+onco_general <- total_ges |>
+  filter(onco == TRUE) |>
+  dplyr::group_by(garantia, riesgo) |>
+  dplyr::summarise(n = n())
+
+treemap(onco_general,
+  index = c("garantia", "riesgo"),
+  vSize = "n",
+  type = "index",
+  title = "Garantías GES oncológicas",
+  palette = c("#54278f","#bdd7e7")
+)
+```
+
 ## Por tipo de riesgo y área de atención
 
 ```{r echo=FALSE, fig.height=5, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
@@ -686,6 +813,84 @@ plot_8 <- total_ges |>
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
 ggplotly(plot_8)
+```
+
+## Índice de resolución (todas)
+
+Se grafican todas las garantías oncológicas (vigentes  + retrasadas).
+
+```{r echo=FALSE, fig.height=7, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+indice_resolucion_onco <- temp %>%
+  dplyr::filter(onco == TRUE) %>% 
+  dplyr::group_by(problema_de_salud, corte) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(
+    variacion = (n - lag(n)) * -1,
+    corte = ymd(corte),
+    indice = mean(variacion, na.rm = TRUE),
+    tipo = case_when(
+      indice > 0 ~ "Positivo",
+      indice == 0 ~ "Neutro",
+      indice < 0 ~ "Negativo"
+    )
+  ) %>%
+  ggplot(aes(indice, problema_de_salud,
+    color = tipo,
+    text = paste(
+      "Indice:", round(indice, 1),
+      "\nProblema:", problema_de_salud,
+      "\nValor:", tipo
+    )
+  )) +
+  geom_vline(xintercept = 0, color = "#9e9ac8") +
+  geom_point(size = 1.3) +
+  scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
+  theme_bw() +
+  labs(
+    x = "Índice de resolución",
+    y = ""
+  )
+
+ggplotly(indice_resolucion_onco, tooltip = "text")
+```
+
+## Índice de resolución (retrasadas)
+
+Se grafican las garantías oncológicas retrasadas.
+
+```{r echo=FALSE, fig.height=7, fig.width=13, message=FALSE, warning=FALSE, out.width="100%"}
+indice_resolucion_onco_retrasados <- temp %>%
+  dplyr::filter(onco == TRUE, garantia == "Vencido") %>% 
+  dplyr::group_by(problema_de_salud, corte) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(
+    variacion = (n - lag(n)) * -1,
+    corte = ymd(corte),
+    indice = mean(variacion, na.rm = TRUE),
+    tipo = case_when(
+      indice > 0 ~ "Positivo",
+      indice == 0 ~ "Neutro",
+      indice < 0 ~ "Negativo"
+    )
+  ) %>%
+  ggplot(aes(indice, problema_de_salud,
+    color = tipo,
+    text = paste(
+      "Indice:", round(indice, 1),
+      "\nProblema:", problema_de_salud,
+      "\nValor:", tipo
+    )
+  )) +
+  geom_vline(xintercept = 0, color = "#9e9ac8") +
+  geom_point(size = 1.3) +
+  scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
+  theme_bw() +
+  labs(
+    x = "Índice de resolución",
+    y = ""
+  )
+
+ggplotly(indice_resolucion_onco_retrasados, tooltip = "text")
 ```
 
 ## Riesgo por centro de responsabilidad
@@ -871,7 +1076,7 @@ plot_16 <- temp %>%
   dplyr::group_by(corte, tipo) %>%
   dplyr::summarise(n = n()) %>%
   ggplot(aes(corte, n, color = tipo)) +
-  geom_line(size = 1.5) +
+  geom_line(size = 1.5, alpha = 0.6) +
   geom_point(size = 2) +
   scale_y_continuous(breaks = integer_breaks()) +
   scale_x_date(date_labels = "%b %d") +

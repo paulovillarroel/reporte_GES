@@ -72,5 +72,4 @@ Ejemplos:
 
 Si encuentras errores en el código o quieres agregar nuevas funcionalidades, definitivamente eres bienvenido/a a crear un Pull Request para mejorar el reporte.
 
-Considera [crear una `issue`](https://github.com/paulovillarroel/reporte_GES/issues) si encuentras algo o tienes alguna duda.
-Tambien puedes [crear un foro de discusión](https://github.com/paulovillarroel/reporte_GES/discussions) para conversar del tema.
+Considera [crear una `issue`](https://github.com/paulovillarroel/reporte_GES/issues) si encuentras algo o tienes alguna duda. Tambien puedes [crear un foro de discusión](https://github.com/paulovillarroel/reporte_GES/discussions) para conversar del tema.

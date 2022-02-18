@@ -1,0 +1,422 @@
+---
+title: "Dashboard Garantías GES Hospital XXXXXX"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: cosmo
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+packages <- c(
+  "flexdashboard",
+  "tidyverse",
+  "janitor",
+  "readxl",
+  "plotly",
+  "lubridate",
+  "kableExtra",
+  "treemap",
+  "paletteer",
+  "writexl",
+  "data.table",
+  "scales",
+  "zoo"
+)
+
+package_check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+
+ges_vigentes <- read_excel("data_raw/vigentes.xlsx", skip = 7) |>
+  select(1, 4:8, 10) |>
+  clean_names()
+
+ges_vencidas <- read_excel("data_raw/vencidas.xlsx", skip = 7) |>
+  select(6, 1, 4:5, 8:9, 11) |>
+  clean_names()
+
+etapas <- read_excel("tables/listado_etapas_GES.xlsx") |>
+  clean_names() |>
+  mutate(problema_de_salud = str_remove(problema_de_salud,
+    pattern = "(\\s?[.]?\\s?[{]\\w+\\s\\w+.\\s?\\d+.?\\d+.)"
+  ))
+
+total_ges <- rbind(ges_vigentes, ges_vencidas) |>
+  mutate(
+    problema_de_salud = str_remove(problema_de_salud,
+      pattern = "(\\s?[.]?\\s?[{]\\w+\\s\\w+.\\s?\\d+.?\\d+.)"
+    ),
+    fecha_de_inicio = ymd(fecha_de_inicio),
+    fecha_limite = ymd(fecha_limite),
+    rut = as.character(rut),
+    plazo_ges = as.numeric(fecha_limite - fecha_de_inicio),
+    dias_avanzados = as.numeric(today() - fecha_de_inicio),
+    dias_retraso = ifelse(fecha_limite >= today(), NA_integer_, as.numeric(today() - fecha_limite)),
+    plazo_interno = plazo_ges * 0.7,
+    fecha_interna = fecha_de_inicio + plazo_interno,
+    indice_resolucion = dias_avanzados / plazo_ges,
+    riesgo = case_when(
+      indice_resolucion > 1 ~ "Vencido",
+      indice_resolucion >= 0.9 ~ "Muy alto",
+      indice_resolucion < 0.9 & indice_resolucion >= 0.7 ~ "Alto",
+      indice_resolucion < 0.7 & indice_resolucion >= 0.35 ~ "Medio",
+      indice_resolucion < 0.35 ~ "Bajo"
+    ),
+    riesgo = factor(riesgo, levels = c(
+      "Bajo",
+      "Medio",
+      "Alto",
+      "Muy alto",
+      "Vencido"
+    )),
+    garantia = case_when(
+      indice_resolucion > 1 ~ "Vencido",
+      indice_resolucion <= 1 ~ "Vigente"
+    ),
+    vence_15 = case_when(
+      fecha_limite - today() <= 15 & fecha_limite - today() >= 0 ~ TRUE,
+      TRUE ~ FALSE
+    ),
+    vence_7 = case_when(
+      fecha_limite - today() <= 7 & fecha_limite - today() >= 0 ~ TRUE,
+      TRUE ~ FALSE
+    )
+  )
+
+total_ges <- inner_join(total_ges, etapas) |>
+  mutate(etapa = factor(etapa, levels = c(
+    "Consulta",
+    "Confirmación",
+    "Etapificación",
+    "Tratamiento",
+    "Rehabilitación",
+    "Seguimiento"
+  )))
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+fecha_vigentes <- read_excel("data_raw/vigentes.xlsx")[1, 1] %>%
+  mutate(corte = dmy(str_extract(`Para Grabar presione F12`, "(\\d+/*\\d+/*\\d+)")))
+fecha_vigentes <- fecha_vigentes$corte
+
+hora_vigentes <- read_excel("data_raw/vigentes.xlsx")[1, 1] %>%
+  mutate(hora = str_extract(`Para Grabar presione F12`, "\\d{2}:\\d{2}:\\d{2}"))
+hora_vigentes <- as.character(hora_vigentes$hora)
+
+fecha_vencidas <- read_excel("data_raw/vencidas.xlsx")[1, 1] %>%
+  mutate(corte = dmy(str_extract(`Para Grabar presione F12`, "(\\d+/*\\d+/*\\d+)")))
+fecha_vencidas <- fecha_vencidas$corte
+
+hora_vencidas <- read_excel("data_raw/vencidas.xlsx")[1, 1] %>%
+  mutate(hora = str_extract(`Para Grabar presione F12`, "\\d{2}:\\d{2}:\\d{2}"))
+hora_vencidas <- as.character(hora_vencidas$hora)
+
+total_ges$corte <- fecha_vencidas
+
+write_xlsx(ges_vigentes, paste0("data_clean/ges_vigentes_", fecha_vigentes, ".xlsx"))
+write_xlsx(ges_vencidas, paste0("data_clean/ges_vencidas_", fecha_vencidas, ".xlsx"))
+write_xlsx(total_ges, paste0("data_clean/total_ges_", fecha_vencidas, ".xlsx"))
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+temp <- list.files(
+  path = "./data_clean/",
+  pattern = "total_ges*",
+  full.names = TRUE
+) %>%
+  map_df(~ read_excel(.)) %>%
+  mutate(riesgo = factor(riesgo, levels = c(
+    "Bajo",
+    "Medio",
+    "Alto",
+    "Muy alto",
+    "Vencido"
+  )))
+
+integer_breaks <- function(n = 5, ...) {
+  fxn <- function(x) {
+    breaks <- floor(pretty(x, n, ...))
+    names(breaks) <- attr(breaks, "labels")
+    breaks
+  }
+  return(fxn)
+}
+```
+
+```{r echo=FALSE}
+total_vencidos <- total_ges |>
+  dplyr::filter(riesgo == "Vencido") |>
+  dplyr::summarise(n = n())
+```
+
+
+```{r echo=FALSE}
+total_garantias <- total_ges %>%
+  count()
+total_vigentes <- total_ges %>%
+  dplyr::filter(garantia == "Vigente") %>%
+  count()
+total_retrasadas <- total_ges %>%
+  dplyr::filter(garantia == "Vencido") %>%
+  count()
+total_onco <- total_ges %>%
+  dplyr::filter(onco == TRUE) %>%
+  count()
+total_onco_retrasadas <- total_ges %>%
+  dplyr::filter(garantia == "Vencido", onco == TRUE) %>%
+  count()
+```
+
+
+Nota: Este reporte está actualizado con la infomación extraída desde SIGGES, con la nómina de vigentes el `r fecha_vigentes` a las `r hora_vigentes` y la nómina de vencidas el `r fecha_vencidas` a las `r hora_vencidas`
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Total garantías vigentes
+
+```{r}
+valueBox(total_vigentes$n, icon = "ion-android-people")
+```
+
+### Total garantías retrasadas
+
+```{r}
+porc_retrasadas <- round((total_retrasadas$n / total_garantias$n) * 100, 1)
+valueBox(total_retrasadas$n,
+  icon = "ion-ios-time",
+  color = ifelse(porc_retrasadas < 5, "primary", "warning")
+)
+```
+
+### Total garantías oncológicas retrasadas
+
+```{r}
+porc_retrasadas_onco <- round((total_onco_retrasadas$n / total_retrasadas$n) * 100, 1)
+valueBox(total_onco_retrasadas$n,
+  icon = "ion-ios-time",
+  color = ifelse(porc_retrasadas < 2, "primary", "warning")
+)
+```
+
+
+### Listado de garantías vencidas y tiempos de retraso
+
+```{r}
+tabla_vencidos <- total_ges |>
+  dplyr::filter(riesgo == "Vencido") |>
+  dplyr::group_by(problema_de_salud) |>
+  dplyr::summarise(
+    n = n(),
+    mediana = median(dias_retraso),
+    max = max(dias_retraso)
+  ) |>
+  arrange(-n)
+
+DT::datatable(tabla_vencidos,
+  options = list(orderClasses = FALSE),
+  colnames = c("Problema de salud", "N°", "Mediana", "Máximo")
+) %>%
+  DT::formatStyle(columns = c(1, 2, 3, 4), fontSize = "90%")
+```
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Evolución de garantías retrasadas (todas)
+
+```{r}
+evolucion_ret_plot <- temp %>%
+  dplyr::filter(garantia == "Vencido") %>%
+  dplyr::group_by(corte) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(
+    variacion = n - lag(n),
+    media_movil = round(rollmean(n, k = 7, fill = NA), 1),
+    corte = ymd(corte)
+  ) %>%
+  ggplot(aes(corte, n)) +
+  geom_line(size = 1, color = "#756bb1", alpha = 0.7) +
+  theme_bw() +
+  scale_y_continuous(breaks = integer_breaks()) +
+  scale_x_date(date_labels = "%b %y") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(
+    x = "",
+    y = "N° garantías retrasadas"
+  )
+
+ggplotly(evolucion_ret_plot)
+```
+
+### Evolución garantías retrasadas oncológicas
+
+```{r}
+plot_retrasadas_onco <- temp %>%
+  mutate(corte = ymd(corte)) %>%
+  dplyr::filter(garantia == "Vencido", onco == TRUE) %>%
+  dplyr::group_by(corte) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(media_movil = round(rollmean(n, k = 7, fill = NA), 1)) %>%
+  ggplot(aes(corte, n)) +
+  geom_line(size = 1, color = "#c200fb") +
+  scale_y_continuous(breaks = integer_breaks()) +
+  scale_x_date(date_labels = "%b %y") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  ) +
+  labs(
+    x = "",
+    y = "N° garantías retrasadas"
+  )
+
+ggplotly(plot_retrasadas_onco)
+```
+
+### Evolución garantías retrasadas por centro de responsabilidad
+
+```{r}
+plot_centro_resp <- temp %>%
+  dplyr::filter(garantia == "Vencido") %>%
+  dplyr::group_by(centro_responsabilidad, corte) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(
+    media_movil = round(rollmean(n, k = 7, fill = NA), 1),
+    corte = ymd(corte)
+  ) %>%
+  ggplot(aes(corte, media_movil,
+    text = paste(
+      "Corte:", corte,
+      "\nMedia móvil:", media_movil,
+      "\nCR:", centro_responsabilidad
+    ),
+    group = centro_responsabilidad
+  )) +
+  geom_line(aes(color = centro_responsabilidad), size = 1, alpha = 0.7) +
+  scale_y_continuous(breaks = integer_breaks()) +
+  scale_x_date(date_labels = "%b %y") +
+  theme_bw() +
+  scale_color_paletteer_d(`"miscpalettes::pastel"`) +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    legend.title = element_blank()
+  ) +
+  labs(
+    x = "",
+    y = "Garantías retrasadas",
+    color = "Área"
+  )
+
+ggplotly(plot_centro_resp, tooltip = "text")
+```
+
+Column {data-width=550, .tabset}
+-----------------------------------------------------------------------
+
+### Índice de resolución GO retrasadas por especialidad
+
+```{r}
+indice_resolucion_especialidad <- temp %>%
+  dplyr::filter(garantia == "Vencido") %>%
+  dplyr::group_by(especialidad, corte) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(
+    variacion = (n - lag(n)) * -1,
+    corte = ymd(corte),
+    indice = mean(variacion, na.rm = TRUE),
+    tipo = case_when(
+      indice > 0 ~ "Positivo",
+      indice == 0 ~ "Neutro",
+      indice < 0 ~ "Negativo"
+    )
+  ) %>%
+  ggplot(aes(indice, especialidad,
+    color = tipo,
+    text = paste(
+      "Indice:", round(indice, 2),
+      "\nEspecialidad:", especialidad,
+      "\nValor:", tipo
+    )
+  )) +
+  geom_vline(xintercept = 0, color = "#9e9ac8") +
+  geom_point(size = 2) +
+  scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
+  theme_bw() +
+  labs(
+    x = "Índice de resolución",
+    y = ""
+  )
+
+ggplotly(indice_resolucion_especialidad, tooltip = "text") %>%
+  layout(
+    xaxis = list(tickfont = list(size = 8)),
+    yaxis = list(tickfont = list(size = 11))
+  )
+```
+
+
+### Índice de resolución GO retrasadas por patología
+
+```{r}
+indice_resolucion_patologia <- temp %>%
+  dplyr::filter(garantia == "Vencido") %>%
+  dplyr::group_by(problema_de_salud, corte) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(
+    variacion = (n - lag(n)) * -1,
+    corte = ymd(corte),
+    indice = mean(variacion, na.rm = TRUE),
+    tipo = case_when(
+      indice > 0 ~ "Positivo",
+      indice == 0 ~ "Neutro",
+      indice < 0 ~ "Negativo"
+    )
+  ) %>%
+  ggplot(aes(indice, problema_de_salud,
+    color = tipo,
+    text = paste(
+      "Indice:", round(indice, 2),
+      "\nProblema:", problema_de_salud,
+      "\nValor:", tipo
+    )
+  )) +
+  geom_vline(xintercept = 0, color = "#9e9ac8") +
+  geom_point(size = 1.3) +
+  scale_color_manual("", values = c("#c51b8a", "#cccccc", "#31a354")) +
+  theme_bw() +
+  theme(
+    axis.text.y = element_text(size = 9),
+    legend.position = "none"
+  ) +
+  labs(
+    x = "Índice de resolución",
+    y = ""
+  )
+
+ggplotly(indice_resolucion_patologia, tooltip = "text") %>%
+  layout(
+    xaxis = list(tickfont = list(size = 8)),
+    yaxis = list(tickfont = list(size = 11)),
+    legend = list(
+      orientation = "v",
+      xanchor = "center",
+      x = 0.5,
+      y = -0.2
+    )
+  )
+```
